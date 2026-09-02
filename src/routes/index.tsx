@@ -289,7 +289,7 @@ function Index() {
           l.location.toLowerCase().includes(normalized)
       ) || null
     );
-  }, [query]);
+  }, [query, allListings]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
