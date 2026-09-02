@@ -260,9 +260,39 @@ function Index() {
         </div>
       </section>
 
-      {/* Search / Trust Score Card */}
+      {/* Search / Trust Score Card + Reviews */}
       <section className="px-6 pb-20" id="search">
         <div className="mx-auto max-w-xl">
+          {/* Tabs */}
+          <div className="mb-6 flex justify-center">
+            <div className="inline-flex rounded-full border border-border bg-card p-1 shadow-soft">
+              <button
+                onClick={() => setTab("score")}
+                className={`inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold transition-colors ${
+                  tab === "score"
+                    ? "gradient-brand text-primary-foreground shadow-soft"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <ShieldCheck className="h-4 w-4" />
+                Trust Score
+              </button>
+              <button
+                onClick={() => setTab("reviews")}
+                className={`inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold transition-colors ${
+                  tab === "reviews"
+                    ? "gradient-brand text-primary-foreground shadow-soft"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <MessageSquarePlus className="h-4 w-4" />
+                Reviews
+              </button>
+            </div>
+          </div>
+
+          {tab === "score" && (
+          <>
           <form onSubmit={handleSearch} className="relative">
             <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
             <input
