@@ -352,6 +352,152 @@ function Index() {
               </p>
             </div>
           )}
+          </>
+          )}
+
+          {tab === "reviews" && (
+            <div className="space-y-6">
+              {/* Add review */}
+              <form
+                onSubmit={submitReview}
+                className="rounded-3xl border border-border bg-card p-6 shadow-card"
+              >
+                <h2 className="text-lg font-bold text-foreground">Add a review</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Share your stay so other students can decide safely.
+                </p>
+
+                <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                  <input
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    placeholder="Your name"
+                    className="h-11 rounded-xl border border-input bg-background px-4 text-sm text-foreground outline-none ring-primary transition-all placeholder:text-muted-foreground focus:border-primary/40 focus:ring-2"
+                  />
+                  <input
+                    value={form.place}
+                    onChange={(e) => setForm({ ...form, place: e.target.value })}
+                    placeholder="PG / hostel / flat name"
+                    className="h-11 rounded-xl border border-input bg-background px-4 text-sm text-foreground outline-none ring-primary transition-all placeholder:text-muted-foreground focus:border-primary/40 focus:ring-2"
+                  />
+                  <select
+                    value={form.category}
+                    onChange={(e) => setForm({ ...form, category: e.target.value })}
+                    className="h-11 rounded-xl border border-input bg-background px-4 text-sm text-foreground outline-none ring-primary transition-all focus:border-primary/40 focus:ring-2"
+                  >
+                    {REVIEW_CATEGORIES.filter((c) => c !== "All").map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="flex h-11 items-center gap-1 rounded-xl border border-input bg-background px-4">
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <button
+                        key={n}
+                        type="button"
+                        aria-label={`Rate ${n} out of 5`}
+                        onClick={() => setForm({ ...form, rating: n })}
+                        className="p-0.5"
+                      >
+                        <Star
+                          className={`h-5 w-5 transition-colors ${
+                            n <= form.rating
+                              ? "fill-trust-average text-trust-average"
+                              : "text-muted-foreground/40"
+                          }`}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <textarea
+                  value={form.text}
+                  onChange={(e) => setForm({ ...form, text: e.target.value })}
+                  placeholder="What was your stay like? Safety, landlord, cleanliness..."
+                  rows={3}
+                  className="mt-3 w-full resize-none rounded-xl border border-input bg-background px-4 py-3 text-sm text-foreground outline-none ring-primary transition-all placeholder:text-muted-foreground focus:border-primary/40 focus:ring-2"
+                />
+
+                <button
+                  type="submit"
+                  className="mt-4 inline-flex items-center justify-center gap-2 rounded-full gradient-brand px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-soft transition-opacity hover:opacity-90"
+                >
+                  Post review
+                  <Send className="h-4 w-4" />
+                </button>
+              </form>
+
+              {/* Filter */}
+              <div>
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    value={reviewFilter}
+                    onChange={(e) => setReviewFilter(e.target.value)}
+                    placeholder="Filter reviews by place, student, or keyword..."
+                    className="h-12 w-full rounded-2xl border border-input bg-card pl-12 pr-4 text-sm text-foreground shadow-soft outline-none ring-primary transition-all placeholder:text-muted-foreground focus:border-primary/40 focus:ring-4"
+                  />
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {REVIEW_CATEGORIES.map((c) => (
+                    <button
+                      key={c}
+                      onClick={() => setReviewCategory(c)}
+                      className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+                        reviewCategory === c
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-secondary text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* List */}
+              <div className="space-y-4">
+                {filteredReviews.map((r) => (
+                  <article
+                    key={r.id}
+                    className="rounded-2xl border border-border bg-card p-5 shadow-soft"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <h3 className="font-semibold text-foreground">{r.place}</h3>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {r.name} • {r.category}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-0.5">
+                        {[1, 2, 3, 4, 5].map((n) => (
+                          <Star
+                            key={n}
+                            className={`h-4 w-4 ${
+                              n <= r.rating
+                                ? "fill-trust-average text-trust-average"
+                                : "text-muted-foreground/30"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{r.text}</p>
+                  </article>
+                ))}
+
+                {filteredReviews.length === 0 && (
+                  <div className="rounded-2xl border border-border bg-card p-6 text-center shadow-soft">
+                    <p className="text-sm text-muted-foreground">
+                      No reviews match this filter yet.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
