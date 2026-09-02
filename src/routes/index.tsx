@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import {
   Search,
   ShieldCheck,
@@ -10,6 +10,9 @@ import {
   Home,
   Eye,
   ThumbsUp,
+  Star,
+  MessageSquarePlus,
+  Send,
 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
