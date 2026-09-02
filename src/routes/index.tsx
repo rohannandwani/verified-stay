@@ -392,7 +392,8 @@ function Index() {
                     </p>
                   </div>
                   <div className="rounded-xl bg-white/20 px-3 py-1 text-xs font-semibold text-primary-foreground backdrop-blur-sm">
-                    {result.reviews} verified reviews
+                    {result.reviews} {result.community ? "community" : "verified"}{" "}
+                    {result.reviews === 1 ? "review" : "reviews"}
                   </div>
                 </div>
               </div>
@@ -411,11 +412,18 @@ function Index() {
           {searched && !result && query.trim() && (
             <div className="mt-8 rounded-2xl border border-border bg-card p-6 text-center shadow-soft">
               <p className="text-muted-foreground">
-                No verified listing found. Try searching for{" "}
-                <span className="font-medium text-foreground">Sunrise PG</span>,{" "}
-                <span className="font-medium text-foreground">Scholar's Nest</span>, or{" "}
-                <span className="font-medium text-foreground">Metro Hostel</span>.
+                <span className="font-medium text-foreground">"{query.trim()}"</span> isn't listed yet.
               </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Lived there? Add it and share what you felt about it.
+              </p>
+              <button
+                onClick={startAddListing}
+                className="mt-4 inline-flex items-center justify-center gap-2 rounded-full gradient-brand px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-soft transition-opacity hover:opacity-90"
+              >
+                <MessageSquarePlus className="h-4 w-4" />
+                Add this listing
+              </button>
             </div>
           )}
           </>
