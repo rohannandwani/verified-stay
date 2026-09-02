@@ -37,7 +37,7 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-const mockListings = [
+const mockListings: Listing[] = [
   {
     id: "1",
     name: "Sunrise PG",
@@ -91,6 +91,17 @@ function getScoreColor(score: number) {
   return "risky" as const;
 }
 
+type Listing = {
+  id: string;
+  name: string;
+  location: string;
+  trustScore: number;
+  safetyScore: number;
+  landlordScore: number;
+  reviews: number;
+  community?: boolean;
+};
+
 type Review = {
   id: string;
   name: string;
@@ -129,6 +140,7 @@ const seedReviews: Review[] = [
 
 const REVIEW_CATEGORIES = ["All", "PG", "Hostel", "Flat", "Flatmate"] as const;
 const REVIEWS_STORAGE_KEY = "trustcircle-reviews";
+const LISTINGS_STORAGE_KEY = "trustcircle-listings";
 
 function scoreStyles(tier: "safe" | "average" | "risky") {
   switch (tier) {
@@ -165,6 +177,7 @@ function Index() {
   const searchRef = useRef<HTMLInputElement>(null);
   const [tab, setTab] = useState<"score" | "reviews">("score");
   const [reviews, setReviews] = useState<Review[]>(seedReviews);
+  const [userListings, setUserListings] = useState<Listing[]>([]);
   const [reviewFilter, setReviewFilter] = useState("");
   const [reviewCategory, setReviewCategory] = useState<string>("All");
   const [form, setForm] = useState({ name: "", place: "", category: "PG", rating: 5, text: "" });
@@ -176,7 +189,15 @@ function Index() {
     } catch {
       // ignore corrupt storage
     }
+    try {
+      const rawListings = window.localStorage.getItem(LISTINGS_STORAGE_KEY);
+      if (rawListings) setUserListings(JSON.parse(rawListings));
+    } catch {
+      // ignore corrupt storage
+    }
   }, []);
+
+  const allListings = useMemo(() => [...userListings, ...mockListings], [userListings]);
 
   const filteredReviews = useMemo(() => {
     const q = reviewFilter.trim().toLowerCase();
@@ -210,20 +231,65 @@ function Index() {
     } catch {
       // storage unavailable
     }
+
+    // If this place isn't listed yet, create a community listing from this review
+    const placeKey = review.place.toLowerCase();
+    const exists = allListings.some((l) => l.name.toLowerCase() === placeKey);
+    if (!exists) {
+      const base = review.rating * 20;
+      const newListing: Listing = {
+        id: `l-${Date.now()}`,
+        name: review.place,
+        location: "Added by the community",
+        trustScore: base,
+        safetyScore: base,
+        landlordScore: base,
+        reviews: 1,
+        community: true,
+      };
+      const nextListings = [newListing, ...userListings];
+      setUserListings(nextListings);
+      try {
+        window.localStorage.setItem(LISTINGS_STORAGE_KEY, JSON.stringify(nextListings));
+      } catch {
+        // storage unavailable
+      }
+    } else {
+      const nextListings = userListings.map((l) => {
+        if (l.name.toLowerCase() !== placeKey) return l;
+        const total = l.reviews + 1;
+        const score = Math.round((l.trustScore * l.reviews + review.rating * 20) / total);
+        return { ...l, reviews: total, trustScore: score, safetyScore: score, landlordScore: score };
+      });
+      if (nextListings.some((l, i) => l !== userListings[i])) {
+        setUserListings(nextListings);
+        try {
+          window.localStorage.setItem(LISTINGS_STORAGE_KEY, JSON.stringify(nextListings));
+        } catch {
+          // storage unavailable
+        }
+      }
+    }
+
     setForm({ name: "", place: "", category: "PG", rating: 5, text: "" });
+  };
+
+  const startAddListing = () => {
+    setForm((f) => ({ ...f, place: query.trim() }));
+    setTab("reviews");
   };
 
   const result = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     if (!normalized) return null;
     return (
-      mockListings.find(
+      allListings.find(
         (l) =>
           l.name.toLowerCase().includes(normalized) ||
           l.location.toLowerCase().includes(normalized)
       ) || null
     );
-  }, [query]);
+  }, [query, allListings]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -326,7 +392,8 @@ function Index() {
                     </p>
                   </div>
                   <div className="rounded-xl bg-white/20 px-3 py-1 text-xs font-semibold text-primary-foreground backdrop-blur-sm">
-                    {result.reviews} verified reviews
+                    {result.reviews} {result.community ? "community" : "verified"}{" "}
+                    {result.reviews === 1 ? "review" : "reviews"}
                   </div>
                 </div>
               </div>
@@ -345,11 +412,18 @@ function Index() {
           {searched && !result && query.trim() && (
             <div className="mt-8 rounded-2xl border border-border bg-card p-6 text-center shadow-soft">
               <p className="text-muted-foreground">
-                No verified listing found. Try searching for{" "}
-                <span className="font-medium text-foreground">Sunrise PG</span>,{" "}
-                <span className="font-medium text-foreground">Scholar's Nest</span>, or{" "}
-                <span className="font-medium text-foreground">Metro Hostel</span>.
+                <span className="font-medium text-foreground">"{query.trim()}"</span> isn't listed yet.
               </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Lived there? Add it and share what you felt about it.
+              </p>
+              <button
+                onClick={startAddListing}
+                className="mt-4 inline-flex items-center justify-center gap-2 rounded-full gradient-brand px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-soft transition-opacity hover:opacity-90"
+              >
+                <MessageSquarePlus className="h-4 w-4" />
+                Add this listing
+              </button>
             </div>
           )}
           </>
@@ -364,7 +438,7 @@ function Index() {
               >
                 <h2 className="text-lg font-bold text-foreground">Add a review</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Share your stay so other students can decide safely.
+                  Share your stay so other students can decide safely. If the place isn't listed yet, we'll add it with your review.
                 </p>
 
                 <div className="mt-5 grid gap-3 sm:grid-cols-2">
