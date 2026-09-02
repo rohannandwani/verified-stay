@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import {
   Search,
   ShieldCheck,
@@ -10,6 +10,9 @@ import {
   Home,
   Eye,
   ThumbsUp,
+  Star,
+  MessageSquarePlus,
+  Send,
 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
@@ -88,6 +91,45 @@ function getScoreColor(score: number) {
   return "risky" as const;
 }
 
+type Review = {
+  id: string;
+  name: string;
+  place: string;
+  category: string;
+  rating: number;
+  text: string;
+};
+
+const seedReviews: Review[] = [
+  {
+    id: "r1",
+    name: "Ananya S.",
+    place: "Sunrise PG",
+    category: "PG",
+    rating: 5,
+    text: "Felt safe the whole year. Warden was strict but fair, and the landlord returned my deposit without fuss.",
+  },
+  {
+    id: "r2",
+    name: "Rahul M.",
+    place: "Metro Hostel",
+    category: "Hostel",
+    rating: 2,
+    text: "Frequent power cuts and the gate stays unlocked at night. Wouldn't recommend for first-year students.",
+  },
+  {
+    id: "r3",
+    name: "Priya K.",
+    place: "Campus Stay",
+    category: "Flat",
+    rating: 5,
+    text: "Clean rooms, responsive owner, and great flatmates. Walking distance from the metro.",
+  },
+];
+
+const REVIEW_CATEGORIES = ["All", "PG", "Hostel", "Flat", "Flatmate"] as const;
+const REVIEWS_STORAGE_KEY = "trustcircle-reviews";
+
 function scoreStyles(tier: "safe" | "average" | "risky") {
   switch (tier) {
     case "safe":
@@ -121,6 +163,55 @@ function Index() {
   const [query, setQuery] = useState("");
   const [searched, setSearched] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
+  const [tab, setTab] = useState<"score" | "reviews">("score");
+  const [reviews, setReviews] = useState<Review[]>(seedReviews);
+  const [reviewFilter, setReviewFilter] = useState("");
+  const [reviewCategory, setReviewCategory] = useState<string>("All");
+  const [form, setForm] = useState({ name: "", place: "", category: "PG", rating: 5, text: "" });
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(REVIEWS_STORAGE_KEY);
+      if (raw) setReviews([...JSON.parse(raw), ...seedReviews]);
+    } catch {
+      // ignore corrupt storage
+    }
+  }, []);
+
+  const filteredReviews = useMemo(() => {
+    const q = reviewFilter.trim().toLowerCase();
+    return reviews.filter((r) => {
+      const matchesCategory = reviewCategory === "All" || r.category === reviewCategory;
+      const matchesQuery =
+        !q ||
+        r.place.toLowerCase().includes(q) ||
+        r.name.toLowerCase().includes(q) ||
+        r.text.toLowerCase().includes(q);
+      return matchesCategory && matchesQuery;
+    });
+  }, [reviews, reviewFilter, reviewCategory]);
+
+  const submitReview = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name.trim() || !form.place.trim() || !form.text.trim()) return;
+    const review: Review = {
+      id: `r-${Date.now()}`,
+      name: form.name.trim(),
+      place: form.place.trim(),
+      category: form.category,
+      rating: form.rating,
+      text: form.text.trim(),
+    };
+    const updated = [review, ...reviews];
+    setReviews(updated);
+    try {
+      const userOnly = updated.filter((r) => !seedReviews.some((s) => s.id === r.id));
+      window.localStorage.setItem(REVIEWS_STORAGE_KEY, JSON.stringify(userOnly));
+    } catch {
+      // storage unavailable
+    }
+    setForm({ name: "", place: "", category: "PG", rating: 5, text: "" });
+  };
 
   const result = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -169,9 +260,39 @@ function Index() {
         </div>
       </section>
 
-      {/* Search / Trust Score Card */}
+      {/* Search / Trust Score Card + Reviews */}
       <section className="px-6 pb-20" id="search">
         <div className="mx-auto max-w-xl">
+          {/* Tabs */}
+          <div className="mb-6 flex justify-center">
+            <div className="inline-flex rounded-full border border-border bg-card p-1 shadow-soft">
+              <button
+                onClick={() => setTab("score")}
+                className={`inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold transition-colors ${
+                  tab === "score"
+                    ? "gradient-brand text-primary-foreground shadow-soft"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <ShieldCheck className="h-4 w-4" />
+                Trust Score
+              </button>
+              <button
+                onClick={() => setTab("reviews")}
+                className={`inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold transition-colors ${
+                  tab === "reviews"
+                    ? "gradient-brand text-primary-foreground shadow-soft"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <MessageSquarePlus className="h-4 w-4" />
+                Reviews
+              </button>
+            </div>
+          </div>
+
+          {tab === "score" && (
+          <>
           <form onSubmit={handleSearch} className="relative">
             <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
             <input
@@ -229,6 +350,152 @@ function Index() {
                 <span className="font-medium text-foreground">Scholar's Nest</span>, or{" "}
                 <span className="font-medium text-foreground">Metro Hostel</span>.
               </p>
+            </div>
+          )}
+          </>
+          )}
+
+          {tab === "reviews" && (
+            <div className="space-y-6">
+              {/* Add review */}
+              <form
+                onSubmit={submitReview}
+                className="rounded-3xl border border-border bg-card p-6 shadow-card"
+              >
+                <h2 className="text-lg font-bold text-foreground">Add a review</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Share your stay so other students can decide safely.
+                </p>
+
+                <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                  <input
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    placeholder="Your name"
+                    className="h-11 rounded-xl border border-input bg-background px-4 text-sm text-foreground outline-none ring-primary transition-all placeholder:text-muted-foreground focus:border-primary/40 focus:ring-2"
+                  />
+                  <input
+                    value={form.place}
+                    onChange={(e) => setForm({ ...form, place: e.target.value })}
+                    placeholder="PG / hostel / flat name"
+                    className="h-11 rounded-xl border border-input bg-background px-4 text-sm text-foreground outline-none ring-primary transition-all placeholder:text-muted-foreground focus:border-primary/40 focus:ring-2"
+                  />
+                  <select
+                    value={form.category}
+                    onChange={(e) => setForm({ ...form, category: e.target.value })}
+                    className="h-11 rounded-xl border border-input bg-background px-4 text-sm text-foreground outline-none ring-primary transition-all focus:border-primary/40 focus:ring-2"
+                  >
+                    {REVIEW_CATEGORIES.filter((c) => c !== "All").map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="flex h-11 items-center gap-1 rounded-xl border border-input bg-background px-4">
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <button
+                        key={n}
+                        type="button"
+                        aria-label={`Rate ${n} out of 5`}
+                        onClick={() => setForm({ ...form, rating: n })}
+                        className="p-0.5"
+                      >
+                        <Star
+                          className={`h-5 w-5 transition-colors ${
+                            n <= form.rating
+                              ? "fill-trust-average text-trust-average"
+                              : "text-muted-foreground/40"
+                          }`}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <textarea
+                  value={form.text}
+                  onChange={(e) => setForm({ ...form, text: e.target.value })}
+                  placeholder="What was your stay like? Safety, landlord, cleanliness..."
+                  rows={3}
+                  className="mt-3 w-full resize-none rounded-xl border border-input bg-background px-4 py-3 text-sm text-foreground outline-none ring-primary transition-all placeholder:text-muted-foreground focus:border-primary/40 focus:ring-2"
+                />
+
+                <button
+                  type="submit"
+                  className="mt-4 inline-flex items-center justify-center gap-2 rounded-full gradient-brand px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-soft transition-opacity hover:opacity-90"
+                >
+                  Post review
+                  <Send className="h-4 w-4" />
+                </button>
+              </form>
+
+              {/* Filter */}
+              <div>
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    value={reviewFilter}
+                    onChange={(e) => setReviewFilter(e.target.value)}
+                    placeholder="Filter reviews by place, student, or keyword..."
+                    className="h-12 w-full rounded-2xl border border-input bg-card pl-12 pr-4 text-sm text-foreground shadow-soft outline-none ring-primary transition-all placeholder:text-muted-foreground focus:border-primary/40 focus:ring-4"
+                  />
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {REVIEW_CATEGORIES.map((c) => (
+                    <button
+                      key={c}
+                      onClick={() => setReviewCategory(c)}
+                      className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+                        reviewCategory === c
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-secondary text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* List */}
+              <div className="space-y-4">
+                {filteredReviews.map((r) => (
+                  <article
+                    key={r.id}
+                    className="rounded-2xl border border-border bg-card p-5 shadow-soft"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <h3 className="font-semibold text-foreground">{r.place}</h3>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {r.name} • {r.category}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-0.5">
+                        {[1, 2, 3, 4, 5].map((n) => (
+                          <Star
+                            key={n}
+                            className={`h-4 w-4 ${
+                              n <= r.rating
+                                ? "fill-trust-average text-trust-average"
+                                : "text-muted-foreground/30"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{r.text}</p>
+                  </article>
+                ))}
+
+                {filteredReviews.length === 0 && (
+                  <div className="rounded-2xl border border-border bg-card p-6 text-center shadow-soft">
+                    <p className="text-sm text-muted-foreground">
+                      No reviews match this filter yet.
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
