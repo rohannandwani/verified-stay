@@ -177,6 +177,7 @@ function Index() {
   const searchRef = useRef<HTMLInputElement>(null);
   const [tab, setTab] = useState<"score" | "reviews">("score");
   const [reviews, setReviews] = useState<Review[]>(seedReviews);
+  const [userListings, setUserListings] = useState<Listing[]>([]);
   const [reviewFilter, setReviewFilter] = useState("");
   const [reviewCategory, setReviewCategory] = useState<string>("All");
   const [form, setForm] = useState({ name: "", place: "", category: "PG", rating: 5, text: "" });
@@ -188,7 +189,15 @@ function Index() {
     } catch {
       // ignore corrupt storage
     }
+    try {
+      const rawListings = window.localStorage.getItem(LISTINGS_STORAGE_KEY);
+      if (rawListings) setUserListings(JSON.parse(rawListings));
+    } catch {
+      // ignore corrupt storage
+    }
   }, []);
+
+  const allListings = useMemo(() => [...userListings, ...mockListings], [userListings]);
 
   const filteredReviews = useMemo(() => {
     const q = reviewFilter.trim().toLowerCase();
