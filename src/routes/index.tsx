@@ -91,6 +91,45 @@ function getScoreColor(score: number) {
   return "risky" as const;
 }
 
+type Review = {
+  id: string;
+  name: string;
+  place: string;
+  category: string;
+  rating: number;
+  text: string;
+};
+
+const seedReviews: Review[] = [
+  {
+    id: "r1",
+    name: "Ananya S.",
+    place: "Sunrise PG",
+    category: "PG",
+    rating: 5,
+    text: "Felt safe the whole year. Warden was strict but fair, and the landlord returned my deposit without fuss.",
+  },
+  {
+    id: "r2",
+    name: "Rahul M.",
+    place: "Metro Hostel",
+    category: "Hostel",
+    rating: 2,
+    text: "Frequent power cuts and the gate stays unlocked at night. Wouldn't recommend for first-year students.",
+  },
+  {
+    id: "r3",
+    name: "Priya K.",
+    place: "Campus Stay",
+    category: "Flat",
+    rating: 5,
+    text: "Clean rooms, responsive owner, and great flatmates. Walking distance from the metro.",
+  },
+];
+
+const REVIEW_CATEGORIES = ["All", "PG", "Hostel", "Flat", "Flatmate"] as const;
+const REVIEWS_STORAGE_KEY = "trustcircle-reviews";
+
 function scoreStyles(tier: "safe" | "average" | "risky") {
   switch (tier) {
     case "safe":
