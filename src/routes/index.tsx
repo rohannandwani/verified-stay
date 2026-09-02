@@ -231,14 +231,59 @@ function Index() {
     } catch {
       // storage unavailable
     }
+
+    // If this place isn't listed yet, create a community listing from this review
+    const placeKey = review.place.toLowerCase();
+    const exists = allListings.some((l) => l.name.toLowerCase() === placeKey);
+    if (!exists) {
+      const base = review.rating * 20;
+      const newListing: Listing = {
+        id: `l-${Date.now()}`,
+        name: review.place,
+        location: "Added by the community",
+        trustScore: base,
+        safetyScore: base,
+        landlordScore: base,
+        reviews: 1,
+        community: true,
+      };
+      const nextListings = [newListing, ...userListings];
+      setUserListings(nextListings);
+      try {
+        window.localStorage.setItem(LISTINGS_STORAGE_KEY, JSON.stringify(nextListings));
+      } catch {
+        // storage unavailable
+      }
+    } else {
+      const nextListings = userListings.map((l) => {
+        if (l.name.toLowerCase() !== placeKey) return l;
+        const total = l.reviews + 1;
+        const score = Math.round((l.trustScore * l.reviews + review.rating * 20) / total);
+        return { ...l, reviews: total, trustScore: score, safetyScore: score, landlordScore: score };
+      });
+      if (nextListings.some((l, i) => l !== userListings[i])) {
+        setUserListings(nextListings);
+        try {
+          window.localStorage.setItem(LISTINGS_STORAGE_KEY, JSON.stringify(nextListings));
+        } catch {
+          // storage unavailable
+        }
+      }
+    }
+
     setForm({ name: "", place: "", category: "PG", rating: 5, text: "" });
+  };
+
+  const startAddListing = () => {
+    setForm((f) => ({ ...f, place: query.trim() }));
+    setTab("reviews");
   };
 
   const result = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     if (!normalized) return null;
     return (
-      mockListings.find(
+      allListings.find(
         (l) =>
           l.name.toLowerCase().includes(normalized) ||
           l.location.toLowerCase().includes(normalized)
