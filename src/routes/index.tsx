@@ -438,7 +438,7 @@ function Index() {
               >
                 <h2 className="text-lg font-bold text-foreground">Add a review</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Share your stay so other students can decide safely.
+                  Share your stay so other students can decide safely. If the place isn't listed yet, we'll add it with your review.
                 </p>
 
                 <div className="mt-5 grid gap-3 sm:grid-cols-2">
