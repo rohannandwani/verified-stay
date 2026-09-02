@@ -37,7 +37,7 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-const mockListings = [
+const mockListings: Listing[] = [
   {
     id: "1",
     name: "Sunrise PG",
