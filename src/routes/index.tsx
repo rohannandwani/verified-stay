@@ -163,6 +163,55 @@ function Index() {
   const [query, setQuery] = useState("");
   const [searched, setSearched] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
+  const [tab, setTab] = useState<"score" | "reviews">("score");
+  const [reviews, setReviews] = useState<Review[]>(seedReviews);
+  const [reviewFilter, setReviewFilter] = useState("");
+  const [reviewCategory, setReviewCategory] = useState<string>("All");
+  const [form, setForm] = useState({ name: "", place: "", category: "PG", rating: 5, text: "" });
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(REVIEWS_STORAGE_KEY);
+      if (raw) setReviews([...JSON.parse(raw), ...seedReviews]);
+    } catch {
+      // ignore corrupt storage
+    }
+  }, []);
+
+  const filteredReviews = useMemo(() => {
+    const q = reviewFilter.trim().toLowerCase();
+    return reviews.filter((r) => {
+      const matchesCategory = reviewCategory === "All" || r.category === reviewCategory;
+      const matchesQuery =
+        !q ||
+        r.place.toLowerCase().includes(q) ||
+        r.name.toLowerCase().includes(q) ||
+        r.text.toLowerCase().includes(q);
+      return matchesCategory && matchesQuery;
+    });
+  }, [reviews, reviewFilter, reviewCategory]);
+
+  const submitReview = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name.trim() || !form.place.trim() || !form.text.trim()) return;
+    const review: Review = {
+      id: `r-${Date.now()}`,
+      name: form.name.trim(),
+      place: form.place.trim(),
+      category: form.category,
+      rating: form.rating,
+      text: form.text.trim(),
+    };
+    const updated = [review, ...reviews];
+    setReviews(updated);
+    try {
+      const userOnly = updated.filter((r) => !seedReviews.some((s) => s.id === r.id));
+      window.localStorage.setItem(REVIEWS_STORAGE_KEY, JSON.stringify(userOnly));
+    } catch {
+      // storage unavailable
+    }
+    setForm({ name: "", place: "", category: "PG", rating: 5, text: "" });
+  };
 
   const result = useMemo(() => {
     const normalized = query.trim().toLowerCase();
