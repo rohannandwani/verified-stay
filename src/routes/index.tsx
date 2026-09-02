@@ -91,6 +91,17 @@ function getScoreColor(score: number) {
   return "risky" as const;
 }
 
+type Listing = {
+  id: string;
+  name: string;
+  location: string;
+  trustScore: number;
+  safetyScore: number;
+  landlordScore: number;
+  reviews: number;
+  community?: boolean;
+};
+
 type Review = {
   id: string;
   name: string;
@@ -129,6 +140,7 @@ const seedReviews: Review[] = [
 
 const REVIEW_CATEGORIES = ["All", "PG", "Hostel", "Flat", "Flatmate"] as const;
 const REVIEWS_STORAGE_KEY = "trustcircle-reviews";
+const LISTINGS_STORAGE_KEY = "trustcircle-listings";
 
 function scoreStyles(tier: "safe" | "average" | "risky") {
   switch (tier) {
